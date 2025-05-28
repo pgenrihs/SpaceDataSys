@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+    <title>SunDataSys</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>🛰️ Saules radioastronomisko novērojumu datu pārvaldības sistēma</h1>
+
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".fits, .fit, .fts">
+        <input type="submit" value="Augšupielādēt">
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <h2>Faili</h2>
+    <ul>
+        {% for file in files %}
+        <li>
+            {{ file }} |
+            <a href="{{ url_for('view_file', filename=file) }}">Apskatīt</a> |
+            <a href="{{ url_for('download_file', filename=file) }}">Lejupielādēt</a>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

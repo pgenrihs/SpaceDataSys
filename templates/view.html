@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+    <title>Skatīt failu - {{ filename }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>🛰️ Fails: {{ filename }}</h1>
+    <a href="{{ url_for('index') }}">⬅️ Atpakaļ uz galveno lapu</a>
+
+    {% for hdu in hdu_views %}
+
+    <hr>
+    <h2>HDU {{ hdu.index }} - {{ hdu.name }}</h2>
+    <p><strong>HDU tips:</strong> {{ hdu.type }} | <strong>Izmērs:</strong> {{ hdu.shape }}</p>
+
+    {% if hdu.image %}
+    <h3>🖼️ Attēla priekšskatījums</h3>
+    <img src="data:image/png;base64,{{ hdu.image }}">
+    {% endif %}
+
+    {% if hdu.table %}
+        {% if hdu.table.__class__.__name__ == 'Table' %}
+        <h3>📊 Tabulas priekšskatījums (Pirmās 5 kolonnas)</h3>
+        <table border="1">
+            <tr>
+                {% for col in hdu.table.colnames %}
+                <th>{{ col }}</th>
+                {% endfor %}
+            </tr>
+            {% for row in hdu.table %}
+            <tr>
+                {% for col in hdu.table.colnames %}
+                <td>{{ row[col] }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p>{{ hdu.table }}</p>
+        {% endif %}
+    {% endif %}
+    {% endfor %}
+</body>
+</html>

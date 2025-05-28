@@ -2,24 +2,104 @@ from astropy.io import fits
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from astropy.table import Table
+from flask import Flask, render_template, request, send_from_directory, redirect, url_for, flash
+import os
+import io
+import base64
+import matplotlib
+matplotlib.use('Agg')
+from werkzeug.utils import secure_filename
 
-hdul = fits.open('FOCx38i0101t_c0f.fits')
-hdul.info()
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'fits', 'fit', 'fts'}
 
-for i, hdu in enumerate(hdul):
-    print(i, hdu.name, type(hdu).__name__, hdu.data.shape if hdu.data is not None else None)
+app = Flask(__name__)
+app.secret_key = os.urandom(24)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-    if isinstance(hdu, fits.ImageHDU) or (isinstance(hdu, fits.PrimaryHDU) and hdu.data is not None):
-        image_data = hdu.data.astype(float)
-        plt.imshow(image_data, cmap='gray', norm=LogNorm())
-        plt.colorbar(label='Intensity')
-        plt.title(f'HDU {i}: Image (log scale)')
-        plt.show()
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
-    elif isinstance(hdu, (fits.BinTableHDU, fits.TableHDU)):
-        try:
-            tbl = Table(hdu.data)
-            print(f"HDU {i} - Table preview:")
-            print(tbl[:5])  # Show first 5 rows
-        except Exception as e:
-            print(f"Could not read table from HDU {i}: {e}")
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/')
+def index():
+    files = [f for f in os.listdir(UPLOAD_FOLDER) if allowed_file(f)]
+    return render_template('index.html', files=files)
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        flash('No file part')
+        return redirect(url_for('index'))
+    file = request.files['file']
+    if file.filename == '':
+        flash('Nav izvēlēts fails')
+        return redirect(url_for('index'))
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        flash('Augšupielāde veiksmīga!')
+    else:
+        flash('Neatbalstīts faila tips. Pieņem tikai .fits, .fit vai .fts failus.')
+    return redirect(url_for('index'))
+
+@app.route('/view/<filename>')
+def view_file(filename):
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    hdu_views = []
+
+    try:
+        with fits.open(file_path) as hdul:
+            for i, hdu in enumerate(hdul):
+                hdu_type = type(hdu).__name__
+                name = hdu.name
+                shape = hdu.data.shape if hdu.data is not None else None
+
+                hdu_info = {
+                    "index": i,
+                    "name": name,
+                    "type": hdu_type,
+                    "shape": shape,
+                    "image": None,
+                    "table": None
+                }
+
+                if hdu.data is not None and (hdu_type in ["PrimaryHDU", "ImageHDU"]):
+                    try:
+                        data = hdu.data.astype(float)
+                        fig, ax = plt.subplots()
+                        im = ax.imshow(data, cmap='gray', norm=LogNorm())
+                        plt.colorbar(im, ax=ax, label='Intensitāte')
+                        ax.set_title(f'HDU {i}: Attēls')
+                        buf = io.BytesIO()
+                        plt.savefig(buf, format='png', bbox_inches='tight')
+                        plt.close(fig)
+                        buf.seek(0)
+                        encoded = base64.b64encode(buf.read()).decode('utf-8')
+                        hdu_info['image'] = encoded
+                    except Exception as e:
+                        hdu_info['image'] = f"Attēla ģenerēšanas kļūda: {e}"
+
+                elif hdu_type in ["BinTableHDU", "TableHDU"]:
+                    try:
+                        tbl = Table(hdu.data)
+                        hdu_info['table'] = tbl[:5]  # Only preview first 5 rows
+                    except Exception as e:
+                        hdu_info['table'] = f"Tabulas nolasīšanas kļūda: {e}"
+
+                hdu_views.append(hdu_info)
+
+    except Exception as e:
+        flash(f"Kļūda faila apstrādē: {str(e)}")
+        return redirect(url_for('index'))
+
+    return render_template('view.html', filename=filename, hdu_views=hdu_views)
+
+@app.route('/download/<filename>')
+def download_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
+
+if __name__ == '__main__':
+    app.run(debug=True)
