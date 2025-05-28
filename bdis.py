@@ -25,7 +25,28 @@ def allowed_file(filename):
 
 @app.route('/')
 def index():
-    files = [f for f in os.listdir(UPLOAD_FOLDER) if allowed_file(f)]
+    files = []
+
+    for fname in os.listdir(app.config['UPLOAD_FOLDER']):
+        if allowed_file(fname):
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], fname)
+            metadata = {
+                "name": fname,
+                "date_obs": "N/A",
+                "telescope": "N/A",
+                "object": "N/A"
+            }
+
+            try:
+                with fits.open(file_path) as hdul:
+                    header = hdul[0].header
+                    metadata["date_obs"] = header.get("DATE-OBS", "N/A")
+                    metadata["telescope"] = header.get("TELESCOP", "N/A")
+            except Exception as e:
+                metadata["error"] = f"Kļūda faila nolasīšanā: {e}"
+
+            files.append(metadata)
+
     return render_template('index.html', files=files)
 
 @app.route('/upload', methods=['POST'])

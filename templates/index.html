@@ -23,14 +23,24 @@
     {% endwith %}
 
     <h2>Faili</h2>
-    <ul>
-        {% for file in files %}
-        <li>
-            {{ file }} |
-            <a href="{{ url_for('view_file', filename=file) }}">Apskatīt</a> |
-            <a href="{{ url_for('download_file', filename=file) }}">Lejupielādēt</a>
-        </li>
-        {% endfor %}
-    </ul>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Faila nosaukums</th>
+        <th>Novērojuma datums un laiks</th>
+        <th>Teleskops</th>
+        <th>Opcijas</th>
+    </tr>
+    {% for file in files %}
+    <tr>
+        <td>{{ file.name }}</td>
+        <td>{{ file.date_obs }}</td>
+        <td>{{ file.telescope }}</td>
+        <td>
+            <a href="{{ url_for('view_file', filename=file.name) }}">View</a> |
+            <a href="{{ url_for('download_file', filename=file.name) }}">Download</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
 </body>
 </html>
