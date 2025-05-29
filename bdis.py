@@ -9,6 +9,7 @@ import base64
 import matplotlib
 matplotlib.use('Agg')
 from werkzeug.utils import secure_filename
+import subprocess
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'fits', 'fit', 'fts'}
@@ -51,17 +52,21 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+
     if 'file' not in request.files:
         flash('No file part')
         return redirect(url_for('index'))
     file = request.files['file']
+
     if file.filename == '':
         flash('Nav izvēlēts fails')
         return redirect(url_for('index'))
+    
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         flash('Augšupielāde veiksmīga!')
+
     else:
         flash('Neatbalstīts faila tips. Pieņem tikai .fits, .fit vai .fts failus.')
     return redirect(url_for('index'))
@@ -89,22 +94,17 @@ def view_file(filename):
 
                 if hdu.data is not None and (hdu_type in ["PrimaryHDU", "ImageHDU"]):
                     try:
-                        image_data = hdu.data.astype(float)
-                        colormaps = ['gray', 'viridis', 'plasma', 'inferno']
-                        images = {}
-
-                        for cmap in colormaps:
-                            fig, ax = plt.subplots()
-                            im = ax.imshow(image_data, cmap=cmap, norm=LogNorm())
-                            plt.colorbar(im, ax=ax, label='Intensity')
-                            ax.set_title(f"HDU {i}: {cmap}")
-                            buf = io.BytesIO()
-                            plt.savefig(buf, format='png', bbox_inches='tight')
-                            plt.close(fig)
-                            buf.seek(0)
-                            image_base64 = base64.b64encode(buf.read()).decode('utf-8')
-                            images[cmap] = image_base64
-                            hdu_info['images'] = images
+                        data = hdu.data.astype(float)
+                        fig, ax = plt.subplots()
+                        im = ax.imshow(data, cmap='gray', norm=LogNorm())
+                        plt.colorbar(im, ax=ax, label='Intensitāte')
+                        ax.set_title(f'HDU {i}: Attēls')
+                        buf = io.BytesIO()
+                        plt.savefig(buf, format='png', bbox_inches='tight')
+                        plt.close(fig)
+                        buf.seek(0)
+                        encoded = base64.b64encode(buf.read()).decode('utf-8')
+                        hdu_info['image'] = encoded
                     except Exception as e:
                         hdu_info['image'] = f"Attēla ģenerēšanas kļūda: {e}"
 
@@ -122,6 +122,21 @@ def view_file(filename):
         return redirect(url_for('index'))
 
     return render_template('view.html', filename=filename, hdu_views=hdu_views)
+
+@app.route('/launch-ds9/<filename>')
+def launch_ds9(filename):
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    if not os.path.exists(file_path):
+        flash('Fails neeksistē.')
+        return redirect(url_for('index'))
+    ds9_path = os.path.join(os.path.dirname(__file__), 'ds9', 'ds9.exe')  # Adjust path to your DS9 executable if needed
+    try:
+        subprocess.Popen([ds9_path, f"{file_path}[{index}]"])
+    except Exception as e:
+        flash(f"Kļūda, palaižot DS9: {str(e)}")
+    
+    return redirect(url_for('view_file', filename=filename))
 
 @app.route('/download/<filename>')
 def download_file(filename):

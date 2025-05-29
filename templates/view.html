@@ -14,36 +14,11 @@
     <h2>HDU {{ hdu.index }} - {{ hdu.name }}</h2>
     <p><strong>HDU tips:</strong> {{ hdu.type }} | <strong>Izmērs:</strong> {{ hdu.shape }}</p>
 
-    {% if hdu.images %}
+    {% if hdu.image %}
     <h3>🖼️ Attēla priekšskatījums</h3>
-
-    <label for="cmapSelect{{ hdu.index }}">🎨 Krāsu karte:</label>
-    <select class="cmap-select" data-hdu="{{ hdu.index }}">
-        {% for cmap in hdu.images.keys() %}
-            <option value="{{ cmap }}">{{ cmap }}</option>
-        {% endfor %}
-    </select>
-
-    <img id="imgPreview{{ hdu.index }}" src="data:image/png;base64,{{ hdu.images['gray'] }}"
-        data-hdu="{{ hdu.index }}"
-        {% for cmap, b64 in hdu.images.items() %}
-        data-{{ cmap }}="data:image/png;base64,{{ b64 }}"
-        {% endfor %}>
+    <img src="data:image/png;base64,{{ hdu.image }}">
+    <p><a href="{{ url_for('launch_ds9', filename=filename) }}">Skatīt attēlu ar DS9</a></p>
     {% endif %}
-
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".cmap-select").forEach(function (select) {
-            select.addEventListener("change", function () {
-                const hduIndex = this.dataset.hdu;
-                const selectedCmap = this.value;
-                const img = document.querySelector(`#imgPreview${hduIndex}`);
-                const newSrc = img.dataset[selectedCmap];  // pulls from data-gray, data-viridis, etc.
-                img.src = newSrc;
-            });
-        });
-    });
-    </script>
 
     {% if hdu.table %}
         {% if hdu.table.__class__.__name__ == 'Table' %}
