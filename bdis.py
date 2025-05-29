@@ -123,20 +123,43 @@ def view_file(filename):
 
     return render_template('view.html', filename=filename, hdu_views=hdu_views)
 
-@app.route('/launch-ds9/<filename>')
-def launch_ds9(filename):
+@app.route('/launch-ds9/<filename>/<int:hdu_index>')
+def launch_ds9(filename, hdu_index):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     
     if not os.path.exists(file_path):
         flash('Fails neeksistē.')
         return redirect(url_for('index'))
-    ds9_path = os.path.join(os.path.dirname(__file__), 'ds9', 'ds9.exe')  # Adjust path to your DS9 executable if needed
+    ds9_path = os.path.join(os.path.dirname(__file__), 'ds9', 'ds9')  # Adjust path to your DS9 executable if needed
     try:
-        subprocess.Popen([ds9_path, f"{file_path}[{index}]"])
+        subprocess.Popen([os.path.join(os.path.dirname(__file__), 'ds9', 'ds9'),  # or just 'ds9' if globally installed
+            f"{file_path}[{hdu_index}]"])
     except Exception as e:
         flash(f"Kļūda, palaižot DS9: {str(e)}")
     
-    return redirect(url_for('view_file', filename=filename))
+    return redirect(url_for('view_file', filename=filename, hdu_index=hdu_index))
+
+@app.route('/table/<filename>/<int:hdu_index>')
+def view_table(filename, hdu_index):
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+    if not os.path.exists(file_path):
+        return f"Fails '{filename}' nav atrasts.", 404
+
+    try:
+        with fits.open(file_path) as hdul:
+            hdu = hdul[hdu_index]
+
+            if not isinstance(hdu, (fits.BinTableHDU, fits.TableHDU)):
+                return f"HDU {hdu_index} nav tabula.", 400
+
+            from astropy.table import Table
+            table = Table(hdu.data)
+
+            return render_template("full_table.html", table=table, filename=filename, index=hdu_index)
+
+    except Exception as e:
+        return f"Kļūda tabulas skatīšanā: {e}", 500
 
 @app.route('/download/<filename>')
 def download_file(filename):

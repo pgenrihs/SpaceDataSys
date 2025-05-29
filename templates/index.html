@@ -36,11 +36,20 @@
         <td>{{ file.date_obs }}</td>
         <td>{{ file.telescope }}</td>
         <td>
-            <a href="{{ url_for('view_file', filename=file.name) }}">View</a> |
-            <a href="{{ url_for('download_file', filename=file.name) }}">Download</a>
+            <a href="{{ url_for('view_file', filename=file.name) }}">Skatīt</a> |
+            <a href="{{ url_for('download_file', filename=file.name) }}">Saglabāt</a>
         </td>
     </tr>
     {% endfor %}
 </table>
+    <h2>Par sistēmu</h2>
+    <p>Šī ir vienkārša sistēma, kas ļauj augšupielādēt, skatīt un pārvaldīt Saules radioastronomisko novērojumu datus.</p>
+    <p>Izstrādāts priekš bakalaura darba</p>
+    <p>Sistēma attēlu apskatei izmanto SAOImageDS9, ko izstrādā Smitsona Astrofizikas observatorija</p>
+    <a href="https://sites.google.com/cfa.harvard.edu/saoimageds9/home?authuser=0" target="_blank">SAOImageDS9 mājas lapa</a>
+
+    <footer>
+        <p>Pēteris Genrihs, 2025</p>
+    </footer>
 </body>
 </html>

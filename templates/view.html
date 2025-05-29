@@ -17,7 +17,8 @@
     {% if hdu.image %}
     <h3>🖼️ Attēla priekšskatījums</h3>
     <img src="data:image/png;base64,{{ hdu.image }}">
-    <p><a href="{{ url_for('launch_ds9', filename=filename) }}">Skatīt attēlu ar DS9</a></p>
+    <p><a href="{{ url_for('launch_ds9', filename=filename, hdu_index=hdu.index) }}">
+    Skatīt attēlu ar DS9</a></p>
     {% endif %}
 
     {% if hdu.table %}
@@ -40,6 +41,9 @@
         {% else %}
         <p>{{ hdu.table }}</p>
         {% endif %}
+        <p><a href="{{ url_for('view_table', filename=filename, hdu_index=hdu.index) }}" target="_blank">
+        Skatīt visu tabulu
+        </a></p>
     {% endif %}
     {% endfor %}
 

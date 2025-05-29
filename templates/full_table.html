@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+    <title>Tabula: {{ filename }} [HDU {{ index }}]</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
+        th { background-color: #222; color: #fff; }
+    </style>
+</head>
+<body>
+    <h2>📊 Tabula no {{ filename }} (HDU {{ index }})</h2>
+    <table>
+        <tr>
+            {% for col in table.colnames %}
+            <th>{{ col }}</th>
+            {% endfor %}
+        </tr>
+        {% for row in table %}
+        <tr>
+            {% for col in table.colnames %}
+            <td>{{ row[col] }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
