@@ -89,17 +89,22 @@ def view_file(filename):
 
                 if hdu.data is not None and (hdu_type in ["PrimaryHDU", "ImageHDU"]):
                     try:
-                        data = hdu.data.astype(float)
-                        fig, ax = plt.subplots()
-                        im = ax.imshow(data, cmap='gray', norm=LogNorm())
-                        plt.colorbar(im, ax=ax, label='Intensitāte')
-                        ax.set_title(f'HDU {i}: Attēls')
-                        buf = io.BytesIO()
-                        plt.savefig(buf, format='png', bbox_inches='tight')
-                        plt.close(fig)
-                        buf.seek(0)
-                        encoded = base64.b64encode(buf.read()).decode('utf-8')
-                        hdu_info['image'] = encoded
+                        image_data = hdu.data.astype(float)
+                        colormaps = ['gray', 'viridis', 'plasma', 'inferno']
+                        images = {}
+
+                        for cmap in colormaps:
+                            fig, ax = plt.subplots()
+                            im = ax.imshow(image_data, cmap=cmap, norm=LogNorm())
+                            plt.colorbar(im, ax=ax, label='Intensity')
+                            ax.set_title(f"HDU {i}: {cmap}")
+                            buf = io.BytesIO()
+                            plt.savefig(buf, format='png', bbox_inches='tight')
+                            plt.close(fig)
+                            buf.seek(0)
+                            image_base64 = base64.b64encode(buf.read()).decode('utf-8')
+                            images[cmap] = image_base64
+                            hdu_info['images'] = images
                     except Exception as e:
                         hdu_info['image'] = f"Attēla ģenerēšanas kļūda: {e}"
 
